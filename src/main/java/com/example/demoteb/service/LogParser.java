@@ -3,7 +3,7 @@ package com.example.demoteb.service;
 import com.example.demoteb.data.entity.LogEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import sun.rmi.runtime.Log;
+
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

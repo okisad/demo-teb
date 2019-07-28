@@ -23,26 +23,31 @@ import java.util.regex.Pattern;
 @Slf4j
 public class Consumer {
 
-    @Autowired
-    SimpMessagingTemplate template;
-    @Autowired
-    LogParser logParser;
-    @Autowired
-    LogRepository logRepository;
+    private final SimpMessagingTemplate template;
+    private final LogParser logParser;
+    private final LogRepository logRepository;
 
-    List<LogDto> logs = new ArrayList<>();
+    private List<LogDto> logs;
+    private List<String> cities;
 
-    List<String> cities = new ArrayList<String>() {{
-                add(LogCreator.TOKYO);
-                add(LogCreator.ISTANBUL);
-                add(LogCreator.BEIJING);
-                add(LogCreator.MOSCOW);
-                add(LogCreator.LONDON);
-    }};
+    @Autowired
+    public Consumer(SimpMessagingTemplate template,LogParser logParser,LogRepository logRepository){
+        this.logParser = logParser;
+        this.template = template;
+        this.logRepository = logRepository;
+        this.logs = new ArrayList<>();
+        this.cities = new ArrayList<String>() {{
+            add(LogCreator.TOKYO);
+            add(LogCreator.ISTANBUL);
+            add(LogCreator.BEIJING);
+            add(LogCreator.MOSCOW);
+            add(LogCreator.LONDON);
+        }};
+    }
 
     private static final Pattern checkLog = Pattern.compile(".*Hello-from.*");
 
-    @KafkaListener(topics = "sql-insert", groupId = "sql")
+    @KafkaListener(topics = "log-topic", groupId = "logs")
     public void consume(String message) throws IOException {
         if (checkLog.matcher(message).find()) {
             LogEntity logEntity = logParser.parseLogString(message);
@@ -51,7 +56,7 @@ public class Consumer {
             if (logs.size() > 0) {
                 LogDto lastLog = logs.get(0);
                 if (refreshData(lastLog.getDate(), logEntity.getDate())) {
-                    template.convertAndSend("/topic/live", logs);
+                    template.convertAndSend("/topic/logs", logs);
                     logs = new ArrayList<>();
                     addLog(logEntity);
                 } else {

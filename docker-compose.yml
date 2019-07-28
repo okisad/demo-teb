@@ -1,0 +1,48 @@
+version: "3"
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: "teb-mongo"
+    ports:
+    - 27017:27017
+    command: mongod --smallfiles
+  kafka:
+    image: spotify/kafka
+    ports:
+    - "2181:2181"
+    - "9092:9092"
+    hostname: kafka
+    container_name: kafka
+    environment:
+    - "ADVERTISED_HOST=kafka"
+    - "ADVERTISED_PORT=9092"
+    - "AUTO_CREATE_TOPICS=true"
+    volumes:
+          - db-data:/var/logs
+    command: >
+        bash -c
+        "(sleep 15s &&
+        /opt/kafka_2.11-0.10.1.0/bin/kafka-topics.sh
+        --create
+        --zookeeper
+        localhost:2181 --replication-factor 1 --partitions 1
+        --topic log-topic &) && (nohup tail -n0 -F /var/logs/app.log | /opt/kafka_2.11-0.10.1.0/bin/kafka-console-producer.sh --broker-list localhost:9092 --topic log-topic &)  && (supervisord -n)"
+  app:
+    image: oktay/demo-teb
+    environment:
+      - SPRING_DATA_MONGODB_DATABASE=teb-mongo
+      - SPRING_KAFKA_CONSUMER_BOOTSTRAP-SERVERS=kafka:9092
+      - SPRING_KAFKA_CONSUMER_PRODUCER-SERVERS=kafka:9092
+    entrypoint: "java -Djava.security.egd=file:/dev/./urandom -Dspring.data.mongodb.host=teb-mongo -Dspring.kafka.consumer.bootstrap-servers=kafka:9092 -Dspring.kafka.producer.bootstrap-servers=kafka:9092 -jar /app.jar"
+    ports:
+      - 8080:8080
+    volumes:
+      - db-data:/logs
+    depends_on:
+      - mongodb
+      - kafka
+    links:
+      - mongodb
+      - kafka
+volumes:
+  db-data:
