@@ -5,7 +5,7 @@
     <title>Title</title>
 </head>
 <body>
-    <div id="chartdiv" style="padding-left:100px;width: 80%;height: 500px;"></div>
+    <div id="chartdiv" style="width: 100%;height: 500px;"></div>
 
     <script src="js/core.js"></script>
     <script src="js/charts.js"></script>
@@ -19,9 +19,6 @@
         var logs = [];
         var socket = new SockJS('/logs');
         stompClient = Stomp.over(socket);
-        var lastDate = null;
-        var values = [];
-        var axises = [];
         stompClient.connect({}, function (frame) {
             console.log('Connected: ' + frame);
             stompClient.subscribe('/topic/logs', function (log) {
@@ -34,21 +31,14 @@
                        cities.push(v.name);
                        parsedValue['date'] = new Date(v.date);
                     });
-                    logs.push(parsedValue);
-                    /*cities.forEach(function(c){
-                        var targetAxis = axises.filter(function (a){ return a === c;} )[0];
-                        if (!targetAxis){
-                            createAxisAndSeries(c,c);
-                            axises.push(c);
-                        }
-                    });*/
+                    //logs.push(parsedValue);
                     if (chart){
-                        chart.data = logs;
+                        chart.data.push(parsedValue);
+                        if(chart.data.length >= 10){
+                            chart.data.shift();
+                        }
                         chart.validateData();
-                        console.log(logs);
                     }
-                    console.log(value);
-
                 }
             });
         });
@@ -56,43 +46,27 @@
 
 
         am4core.ready(function() {
-
-// Themes begin
             am4core.useTheme(am4themes_animated);
-// Themes end
-
-// Create chart instance
             chart = am4core.create("chartdiv", am4charts.XYChart);
-
-// Increase contrast by taking evey second color
             chart.colors.step = 2;
-            chart.paddingLeft = 50;
-            chart.paddingRight = 50;
-// Add data
-            //chart.data = generateChartData();
-
-// Create axes
+            chart.paddingLeft = 40;
+            chart.paddingRight = 40;
+            chart.data = [];
             var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
             dateAxis.renderer.minGridDistance = 50;
             dateAxis.baseInterval = {
                 "timeUnit": "second",
                 "count": 5
             };
-
-// Create series
             var valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
             createAxisAndSeries("Tokyo", "Tokyo");
             createAxisAndSeries("Istanbul", "Istanbul");
             createAxisAndSeries("Moscow", "Moscow");
             createAxisAndSeries("Beijing", "Beijing");
             createAxisAndSeries("London", "London");
-            //createAxisAndSeries("views", "Views", true, "triangle");
-            //createAxisAndSeries("hits", "Hits", true, "rectangle");
             chart.legend = new am4charts.Legend();
             chart.cursor = new am4charts.XYCursor();
-
             function createAxisAndSeries(field, name) {
-
                 var series = chart.series.push(new am4charts.LineSeries());
                 series.dataFields.valueY = field;
                 series.dataFields.dateX = "date";
@@ -101,45 +75,12 @@
                 series.name = name;
                 series.tooltipText = "{name}: [bold]{valueY}[/]";
                 series.tensionX = 0.8;
-
                 var interfaceColors = new am4core.InterfaceColorSet();
                 var bullet = series.bullets.push(new am4charts.CircleBullet());
                 bullet.circle.stroke = interfaceColors.getFor("background");
                 bullet.circle.strokeWidth = 2;
-                //valueAxis.renderer.line.strokeOpacity = 1;
-                //valueAxis.renderer.line.strokeWidth = 2;
-                //valueAxis.renderer.line.stroke = series.stroke;
-                //valueAxis.renderer.labels.template.fill = series.stroke;
-                //valueAxis.renderer.opposite = opposite;
-                //valueAxis.renderer.grid.template.disabled = true;
-                //valueAxis.renderer.line.disabled = true; //disables axis line
-                //valueAxis.renderer.labels.template.disabled = true; //disables labels
             }
-            /*function generateChartData() {
-                var chartData = [];
-                var firstDate = new Date();
-                firstDate.setDate(firstDate.getDate() - 100);
-                firstDate.setHours(0, 0, 0, 0);
-                var visits = 1600;
-                var hits = 2900;
-                var views = 8700;
-                for (var i = 0; i < 15; i++) {
-                    var newDate = new Date(firstDate);
-                    newDate.setDate(newDate.getDate() + i);
-                    visits += Math.round((Math.random()<0.5?1:-1)*Math.random()*10);
-                    hits += Math.round((Math.random()<0.5?1:-1)*Math.random()*10);
-                    views += Math.round((Math.random()<0.5?1:-1)*Math.random()*10);
-                    chartData.push({
-                        date: newDate,
-                        visits: visits,
-                        hits: hits,
-                        views: views
-                    });
-                }
-                return chartData;
-            }*/
-
-        }); // end am4core.ready()
+        });
     </script>
 </body>
 

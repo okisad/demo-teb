@@ -26,7 +26,7 @@ public class LogCreator {
 
     //private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    @Scheduled(fixedDelay = 100)
+    @Scheduled(fixedDelay = 10)
     public void scheduledLogJob(){
         generateLog();
     }

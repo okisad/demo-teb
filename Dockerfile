@@ -1,4 +1,4 @@
-FROM openjdk:latest
+FROM openjdk:8-jdk-alpine
 
 ADD target/demo-teb-0.0.1-SNAPSHOT.jar app.jar
 
