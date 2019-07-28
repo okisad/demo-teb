@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div id="chartdiv" style="padding-left:100px;width: 80%;height: 500px;"></div>
+
+    <script src="js/core.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/animated.js"></script>
+    <script type="text/javascript" src="js/stomp.min.js" ></script>
+    <script type="text/javascript" src="js/sockjs.min.js" ></script>
+    <script type="text/javascript" src="js/moment.js" ></script>
+
+    <script>
+        var chart = null;
+        var logs = [];
+        var socket = new SockJS('/logs');
+        stompClient = Stomp.over(socket);
+        var lastDate = null;
+        var values = [];
+        var axises = [];
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/live', function (log) {
+                if(log.body){
+                    var value = JSON.parse(log.body);
+                    var parsedValue ={};
+                    var cities = [];
+                    value.forEach(function(v){
+                       parsedValue[v.name] = v.count;
+                       cities.push(v.name);
+                       parsedValue['date'] = new Date(v.date);
+                    });
+                    logs.push(parsedValue);
+                    /*cities.forEach(function(c){
+                        var targetAxis = axises.filter(function (a){ return a === c;} )[0];
+                        if (!targetAxis){
+                            createAxisAndSeries(c,c);
+                            axises.push(c);
+                        }
+                    });*/
+                    if (chart){
+                        chart.data = logs;
+                        chart.validateData();
+                        console.log(logs);
+                    }
+                    console.log(value);
+                    /*var targetAxis = axises.filter(function (a){ return a === value.city;} )[0];
+                    if (!targetAxis){
+                        createAxisAndSeries(value.city,value.city);
+                        axises.push(value.city);
+                    }
+                    var date = moment(value.date);
+                    var targetDate = logs.filter(function(l){
+                        var tempDate = moment(l.date);
+                        return date.diff(tempDate,'seconds') <= 10;
+                    })[0];
+                    if (targetDate) {
+                        targetDate[value.city] = targetDate[value.city] + 1;
+                    }else {
+                        var tmd =new Date(value.date);
+                        var d = tmd.setSeconds(tmd.getSeconds() - (tmd.getSeconds() % 10));
+                        var item = {
+                            date: d
+                        };
+                        item[value.city] = 1;
+                        logs.unshift(item);
+                    }
+                    if (chart){
+                        chart.data = logs;
+                        chart.validateData();
+                        console.log(logs);
+                    }*/
+                    /*values.push(value);
+                    var date = moment(value.date);
+                    if (!lastDate){
+                        lastDate = date;
+                    }
+                    else{
+                        if(date.diff(lastDate,'seconds') >= 10){
+                            logs = logs.concat(values);
+                            values = [];
+                            lastDate = date;
+                        }
+                    }
+                    console.log(logs);*/
+                }
+            });
+        });
+
+
+
+        am4core.ready(function() {
+
+// Themes begin
+            am4core.useTheme(am4themes_animated);
+// Themes end
+
+// Create chart instance
+            chart = am4core.create("chartdiv", am4charts.XYChart);
+
+// Increase contrast by taking evey second color
+            chart.colors.step = 2;
+
+// Add data
+            //chart.data = generateChartData();
+
+// Create axes
+            var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
+            dateAxis.renderer.minGridDistance = 50;
+            dateAxis.baseInterval = {
+                "timeUnit": "second",
+                "count": 5
+            };
+
+// Create series
+            var valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
+            createAxisAndSeries("Tokyo", "Tokyo");
+            createAxisAndSeries("Istanbul", "Istanbul");
+            createAxisAndSeries("Moscow", "Moscow");
+            createAxisAndSeries("Beijing", "Beijing");
+            createAxisAndSeries("London", "London");
+            //createAxisAndSeries("views", "Views", true, "triangle");
+            //createAxisAndSeries("hits", "Hits", true, "rectangle");
+            chart.legend = new am4charts.Legend();
+            chart.cursor = new am4charts.XYCursor();
+
+            function createAxisAndSeries(field, name) {
+
+                var series = chart.series.push(new am4charts.LineSeries());
+                series.dataFields.valueY = field;
+                series.dataFields.dateX = "date";
+                series.strokeWidth = 2;
+                series.yAxis = valueAxis;
+                series.name = name;
+                series.tooltipText = "{name}: [bold]{valueY}[/]";
+                series.tensionX = 0.8;
+
+                var interfaceColors = new am4core.InterfaceColorSet();
+                var bullet = series.bullets.push(new am4charts.CircleBullet());
+                bullet.circle.stroke = interfaceColors.getFor("background");
+                bullet.circle.strokeWidth = 2;
+                //valueAxis.renderer.line.strokeOpacity = 1;
+                //valueAxis.renderer.line.strokeWidth = 2;
+                //valueAxis.renderer.line.stroke = series.stroke;
+                //valueAxis.renderer.labels.template.fill = series.stroke;
+                //valueAxis.renderer.opposite = opposite;
+                //valueAxis.renderer.grid.template.disabled = true;
+                //valueAxis.renderer.line.disabled = true; //disables axis line
+                //valueAxis.renderer.labels.template.disabled = true; //disables labels
+            }
+            /*function generateChartData() {
+                var chartData = [];
+                var firstDate = new Date();
+                firstDate.setDate(firstDate.getDate() - 100);
+                firstDate.setHours(0, 0, 0, 0);
+                var visits = 1600;
+                var hits = 2900;
+                var views = 8700;
+                for (var i = 0; i < 15; i++) {
+                    var newDate = new Date(firstDate);
+                    newDate.setDate(newDate.getDate() + i);
+                    visits += Math.round((Math.random()<0.5?1:-1)*Math.random()*10);
+                    hits += Math.round((Math.random()<0.5?1:-1)*Math.random()*10);
+                    views += Math.round((Math.random()<0.5?1:-1)*Math.random()*10);
+                    chartData.push({
+                        date: newDate,
+                        visits: visits,
+                        hits: hits,
+                        views: views
+                    });
+                }
+                return chartData;
+            }*/
+
+        }); // end am4core.ready()
+    </script>
+</body>
+
+</html>
